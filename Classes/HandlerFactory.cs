@@ -1,6 +1,7 @@
 ﻿using Classes.Commands;
 using Classes.Handlers;
 using Classes.Logger;
+using Classes.RetryPolicy;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -17,38 +18,24 @@ namespace Classes
             _logger = logger;
         }        
 
-        public IHandler<GenericCommand> CreateGenericHandler()
+        public IHandler<GenericCommand> CreateGenericHandler(IRetryPolicy retryPolicy)
         {
-            return new GenericHandler(_logger);
+            return new GenericHandler(_logger, retryPolicy);
         }
 
-        public IHandler<DoorOpenCommand> CreateDoorOpenHandler()
+        public IHandler<DoorOpenCommand> CreateDoorOpenHandler(IRetryPolicy retryPolicy)
         {
-            return new DoorOpenHandler(_logger);
+            return new DoorOpenHandler(_logger, retryPolicy);
         }
 
-        public IHandler<TempAlertCommand> CreateTempAlarmHandler()
+        public IHandler<TempAlertCommand> CreateTempAlarmHandler(IRetryPolicy retryPolicy)
         {
-            return new TempAlertHandler(_logger);
+            return new TempAlertHandler(_logger, retryPolicy);
         }
 
         public IHandler<NullCommand> CreateNullHandler()
         {
             return new NullHandler(_logger);
         }
-
-        //public IHandler<ICommand> CreateCommand(string commandType)
-        //{
-        //    if (commandType == typeof(GenericCommand).Name)               
-        //        return (IHandler<ICommand>)new GenericHandler(_logger) ;
-
-        //    if (commandType == typeof(DoorOpenCommand).Name)
-        //        return (IHandler<ICommand>)new DoorOpenHandler(_logger);
-
-        //    if (commandType == typeof(TempAlertCommand).Name)   
-        //        return (IHandler<ICommand>)new TempAlertHandler(_logger);
-
-        //    return (IHandler<ICommand>)new NullHandler(_logger);    
-        //}
     }
 }

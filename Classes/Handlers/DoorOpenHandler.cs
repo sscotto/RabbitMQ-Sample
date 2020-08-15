@@ -1,18 +1,21 @@
 ﻿using Classes.Commands;
 using Classes.Logger;
+using Classes.RetryPolicy;
 
 namespace Classes.Handlers
 {
     class DoorOpenHandler : IHandler<DoorOpenCommand>
     {
         private ILogger _logger;
-        public DoorOpenHandler(ILogger logger)
+        private IRetryPolicy _retryPolicy;
+        public DoorOpenHandler(ILogger logger, IRetryPolicy retryPolicy)
         {
             _logger = logger;
+            _retryPolicy = retryPolicy;
         }
         public void Handle(DoorOpenCommand command)
         {
-            _logger.Log(command.BuildMessage());
+            _retryPolicy.Execute(() => { _logger.Log(command.BuildMessage()); });
         }
     }
 }

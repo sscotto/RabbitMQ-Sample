@@ -1,7 +1,9 @@
 ﻿using Classes;
 using Classes.Commands;
+using Classes.Exceptions;
 using Classes.Handlers;
 using Classes.Logger;
+using Classes.RetryPolicy;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -35,6 +37,23 @@ namespace ConsumerMessage
             }
         }
 
+        private static IRetryPolicy _simpleRetryPolicy;
+        private static IRetryPolicy SimpleRetryPolicy
+        {
+            get
+            {
+                return _simpleRetryPolicy ?? (_simpleRetryPolicy = new SimpleRetryPolicy(Logger));
+            }
+        }
+
+        private static IRetryPolicy _exponentialRetryPolicy;
+        private static IRetryPolicy ExponentialRetryPolicy
+        {
+            get
+            {
+                return _exponentialRetryPolicy ?? (_exponentialRetryPolicy = new ExponentialRetryPolicy(Logger));
+            }
+        }
 
         static void Main(string[] args)
         {
@@ -54,16 +73,24 @@ namespace ConsumerMessage
                     var body = ea.Body;
                     var messageJson = Encoding.UTF8.GetString(body);
 
-                    HandleCommand(messageJson);
-                    System.Threading.Thread.Sleep(2000);
-
+                    try
+                    {
+                        HandleCommand(messageJson);
+                        Logger.Log($"Success Handle {messageJson}");
+                        Logger.Log("");
+                        channel.BasicAck(ea.DeliveryTag, false);
+                    } 
+                    catch(HandleMessageException ex)
+                    {
+                        Logger.Log($"Failed Handle {ex.Message} - send to dead letter exchange");
+                        Logger.Log("");
+                        channel.BasicNack(ea.DeliveryTag, false, false);
+                    }                   
                 };
-                channel.BasicConsume(queue: "events_queue",
-                                     autoAck: true,
-                                     consumer: consumer);
-                System.Threading.Thread.Sleep(2000);
-
                 Console.WriteLine("Listening on events_queue....");
+                channel.BasicConsume(queue: "events_queue",
+                                     autoAck: false,
+                                     consumer: consumer);                            
                 Console.ReadLine();
             }
 
@@ -78,19 +105,19 @@ namespace ConsumerMessage
             if (message.Type == typeof(GenericCommand).Name)
             {
                 command = JsonConvert.DeserializeObject<GenericCommand>(message.JsonMessage);
-                HandlerFactory.CreateGenericHandler().Handle((GenericCommand)command);
+                HandlerFactory.CreateGenericHandler(SimpleRetryPolicy).Handle((GenericCommand)command);
             }
 
             if (message.Type == typeof(DoorOpenCommand).Name)
             {
                 command = JsonConvert.DeserializeObject<DoorOpenCommand>(message.JsonMessage);
-                HandlerFactory.CreateDoorOpenHandler().Handle((DoorOpenCommand)command);
+                HandlerFactory.CreateDoorOpenHandler(ExponentialRetryPolicy).Handle((DoorOpenCommand)command);
             }
 
             if (message.Type == typeof(TempAlertCommand).Name)
             {
                 command = JsonConvert.DeserializeObject<TempAlertCommand>(message.JsonMessage);
-                HandlerFactory.CreateTempAlarmHandler().Handle((TempAlertCommand)command);
+                HandlerFactory.CreateTempAlarmHandler(ExponentialRetryPolicy).Handle((TempAlertCommand)command);
             }
 
             if (message.Type == typeof(NullCommand).Name)
