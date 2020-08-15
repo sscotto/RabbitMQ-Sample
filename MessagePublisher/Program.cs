@@ -45,9 +45,10 @@ namespace MessagePublisher
 
                 byte[] messageBuffer = Encoding.Default.GetBytes(JsonConvert.SerializeObject(message));
                 model.BasicPublish(exchangeName, "events", properties, messageBuffer);
+                
                 i++;
                 Console.WriteLine($"Message published - CommandType: {message.Type}");
-                System.Threading.Thread.Sleep(1500);
+                System.Threading.Thread.Sleep(1000);                
             }
 
         }
