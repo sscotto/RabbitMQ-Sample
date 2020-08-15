@@ -3,7 +3,7 @@ Simple RabbitMQ Consoles Apps
 
 Requirements
 - Net Core 3.1.
-- RabbitMQ Installed.
+- RabbitMQ Installed. (https://www.rabbitmq.com/)
 
 Apps. Descriptions:
 
