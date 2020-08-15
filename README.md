@@ -12,6 +12,10 @@ RabbitMQ_QueueCreator
 - Create queue: positions_queue (routing key: positions).
 - Create and bind Direct Exchange Test with queues.
 
+- Create queue: deadletter_events_queue (routing key: events).
+- Create queue: deadletter_positions_queue (routing key: events).
+- Create and bind Direct Exchange dead_letter_exchange with queues.
+
 MessagePublisher
 - Publish Random events to exchange using events routing key.
 - Can run multiples instances.
